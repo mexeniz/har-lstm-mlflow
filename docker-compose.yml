@@ -1,0 +1,36 @@
+version: '3.4'
+
+services:
+  jupyter-lab:
+      build:
+          context: .
+          dockerfile: docker/Dockerfile
+          args:
+            base_image: nvidia/cuda:11.4.2-devel-ubuntu20.04
+
+      restart: always
+      environment:
+          - JUPYTER_CONFIG_PATH=/config/jupyter/jupyter_notebook_config.py
+      volumes:
+          - ./config/jupyter:/config/jupyter/
+          - ./data:/data
+          - ./:/workspace
+      network_mode: host
+      entrypoint: "/bin/bash"
+      deploy:
+          resources:
+              limits:
+                  memory: ${JUPYTER_CONTAINER_MEM_LIMIT}
+              reservations:
+                devices:
+                  - driver: nvidia
+                    count: 1
+                    capabilities: [gpu]
+      command: [
+          "-c",
+          "adduser --uid ${UID} --disabled-password --gecos '' ${USER}; 
+          adduser ${USER} sudo ;
+          echo '${USER} ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers ;
+          su ${USER} -c '/usr/local/bin/jupyter-lab --notebook-dir=/workspace --config=/config/jupyter/jupyter_notebook_config.py'"
+      ]
+
