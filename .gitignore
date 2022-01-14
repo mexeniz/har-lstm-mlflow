@@ -131,3 +131,4 @@ dmypy.json
 *.zip
 data/*
 UCI HAR Dataset/*
+config/jupyter/jupyter_notebook_config.py
