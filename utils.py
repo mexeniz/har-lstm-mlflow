@@ -53,8 +53,8 @@ class FeatUtils():
             X = prep_func(X)
         
         # Reshape to fit with 128 steps and 9 features
-        X = np.array(X).reshape(-1, 128, 9, order="F")
-        y = np.array(y)
+        X = np.array(X.astype("float32")).reshape(-1, 128, 9, order="F")
+        y = np.array(y).squeeze()
 
         # Use `stratify` to preserve class distribution
         X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=split_frac, random_state=88, stratify=y)
