@@ -2,6 +2,7 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -101,7 +102,9 @@ class ModelUtils():
         # Get test data loss and accuracy
 
         test_losses = [] # track loss
-        num_correct = 0
+        accuracy_list = []
+        precisions = []
+        recalls = []
 
         # init hidden state
         h = net.init_hidden(batch_size, train_on_gpu)
@@ -125,22 +128,36 @@ class ModelUtils():
             test_losses.append(test_loss.item())
 
             # get the predicted class by the highest probabilty
-            top_p, pred = output.topk(1, dim=1) 
+            top_p, pred = output.topk(1, dim=1)
             
-            # compare predictions to true label
-            correct_tensor = pred.eq(labels.view_as(pred))
-            correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu else np.squeeze(correct_tensor.cpu().numpy())
-            num_correct += np.sum(correct)
+            
+            if train_on_gpu:
+                # Move back to CPU-memory to compute score
+                labels = labels.cpu().tolist()
+                pred = pred.cpu().flatten().tolist()
+            else:
+                pred = pred.flatten().tolist()
+            
+            acc = accuracy_score(labels, pred)
+            prec = precision_score(labels, pred, average="micro")
+            rec = recall_score(labels, pred, average="micro")
+            
+            accuracy_list.append(acc)
+            precisions.append(prec)
+            recalls.append(rec)
 
 
         # -- stats! -- ##
         # avg test loss
         avg_loss = np.mean(test_losses)
         logger.info("Test loss: {:.3f}".format(avg_loss))
-
-        # accuracy over all test data
-        test_acc = num_correct / len(test_loader.dataset)
-        logger.info("Test accuracy: {:.3f}".format(test_acc))
+        
+        test_acc = np.mean(accuracy_list)
+        logger.info("Test accuracy: {:.6f}".format(test_acc))
+        logger.info("Test precision: {:.6f}".format(np.mean(precisions)))
+        logger.info("Test recall: {:.6f}".format(np.mean(recalls)))
+        
+        
         return avg_loss, test_acc
 
 class HarLSTM(nn.Module):
