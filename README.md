@@ -22,7 +22,32 @@ docker-compose build
 activity_labels.txt  features_info.txt  features.txt  README.txt  test  train
 ```
 
-### 1.3 Run Docker container
+## 1.4 Configure Jupyterlab
+- Edit `config/jupyter/jupyter_notebook_config.py` by your own.
+- For example, set a port of Jupyterlab service by
+```
+## The port the notebook server will listen on.
+c.NotebookApp.port = 8080
+```
+- set a password hash for Jupyterlab access by running this Python code
+```
+from notebook.auth import passwd; passwd()
+```
+After that, place a hash string in the config file at
+```
+c.NotebookApp.password = 'sha1:place:yourstring'
+```
+
+### 1.5 Run Docker container
+- Start a container and acces it at `http://localhost:8888`
 ```
 docker-compose up -d
 ```
+
+
+# 2. Juppyter Notebooks
+# 2.1 Data Exploration
+You might want to explore and visualize data. You can do it by using `exploration.ipynb` notebook.
+
+# 2.2 Train and inference
+Run code in ``

@@ -9,7 +9,7 @@ import torch
 from torch.utils.data import TensorDataset, DataLoader
 
 class FeatUtils():
-    
+    # These load functions are modified based on https://machinelearningmastery.com/how-to-develop-rnn-models-for-human-activity-recognition-time-series-classification/.
     @staticmethod
     def load_file(filepath):
         "load a single file as a dataframe"
@@ -23,8 +23,6 @@ class FeatUtils():
         for filename in filenames:
             col = re.sub(r"(_train.txt)|(_test.txt)", "", filename)
             data_dict[col] = cls.load_file(os.path.join(prefix, filename))
-        # stack group so that features are the 3rd dimension
-    #     loaded = np.dstack(loaded)
         df = pd.concat(data_dict, axis=1)
         return df
 
@@ -47,7 +45,10 @@ class FeatUtils():
     
     @classmethod
     def make_train_valid_test_feature(cls, X, y, prep_func=None, norm=False, split_frac=0.8):
-        """Make features from loaded dataframes for train/validate/test"""
+        """Make features from loaded dataframes for train/validate/test
+        Data are divided to a train set by a ratio of split_frac.
+        Then, the remainings are divided to a validation set and a test set equally (half by half).
+        """
         # Pre-process features here...
         if prep_func is not None:
             X = prep_func(X)
@@ -64,20 +65,20 @@ class FeatUtils():
 
             X_train = cls.normalize_feature(X_train, mean, std)
             X_test = cls.normalize_feature(X_test, mean, std)
-
-        # Make validation set
-        X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, test_size=0.3, random_state=88, stratify=y_train)
+        
+        # Make validation set and test 50:50
+        X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.5, random_state=88, stratify=y_test)
 
         return X_train, X_valid, X_test, y_train, y_valid, y_test
 
     @classmethod
     def make_dataloaders(cls, X_train, X_valid, X_test, y_train, y_valid, y_test, batch_size=128):
-        # create Tensor datasets
+        # Create Tensor datasets
         train_data = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
         valid_data = TensorDataset(torch.from_numpy(X_valid), torch.from_numpy(y_valid))
         test_data = TensorDataset(torch.from_numpy(X_test), torch.from_numpy(y_test))
 
-        # make sure to SHUFFLE your data
+        # Make sure to SHUFFLE your data
         # NOTE: Drop last to prevent a mismatched size of hidden state
         train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
         valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size, drop_last=True)
