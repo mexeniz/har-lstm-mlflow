@@ -44,10 +44,9 @@ class FeatUtils():
         return X, y
     
     @classmethod
-    def make_train_valid_test_feature(cls, X, y, prep_func=None, norm=False, split_frac=0.8):
-        """Make features from loaded dataframes for train/validate/test
-        Data are divided to a train set by a ratio of split_frac.
-        Then, the remainings are divided to a validation set and a test set equally (half by half).
+    def make_split_feature(cls, X, y, prep_func=None, norm=False, split_frac=0.8):
+        """Make features from loaded dataframes for train/validate
+        Data are divided to a train/validate set by a ratio of split_frac.
         """
         # Pre-process features here...
         if prep_func is not None:
@@ -58,30 +57,52 @@ class FeatUtils():
         y = np.array(y).squeeze()
 
         # Use `stratify` to preserve class distribution
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=split_frac, random_state=88, stratify=y)
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=split_frac, random_state=88, stratify=y)
 
-        if norm:
-            mean, std = cls.compute_mean_std(X_train)
-
-            X_train = cls.normalize_feature(X_train, mean, std)
-            X_test = cls.normalize_feature(X_test, mean, std)
+        return X_train, X_valid, y_train, y_valid
+    
+    @staticmethod
+    def standard_normalize(X, means, stds):
+        """Feature-wise"""
+        X = X.reshape((-1, 9))
+        return ((X - means) / stds).reshape((-1, 128, 9))
         
-        # Make validation set and test 50:50
-        X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.5, random_state=88, stratify=y_test)
-
-        return X_train, X_valid, X_test, y_train, y_valid, y_test
-
+    @staticmethod
+    def min_max_normalize(X, max_vals, min_vals):
+        """Feature-wise"""
+        X = X.reshape((-1, 9))
+        return ((X - min_vals) / (max_vals - min_vals)).reshape((-1, 128, 9))
+    
     @classmethod
-    def make_dataloaders(cls, X_train, X_valid, X_test, y_train, y_valid, y_test, batch_size=128):
+    def normalize_feature(cls, X_train, X_valid, X_test, method="minmax"):
+        base_data = np.concatenate((X_train, X_valid), axis=0)
+        base_data = base_data.reshape((-1, 9))
+        if method == "minmax":
+            max_vals = base_data.max(axis=0)
+            min_vals = base_data.min(axis=0)
+            
+            norm_X_train = cls.min_max_normalize(X_train, max_vals, min_vals)
+            norm_X_valid = cls.min_max_normalize(X_valid, max_vals, min_vals)
+            norm_X_test = cls.min_max_normalize(X_test, max_vals, min_vals)
+        elif method == "standard":
+            means = base_data.mean(axis=0)
+            stds = base_data.std(axis=0)
+            
+            norm_X_train = cls.standard_normalize(X_train, means, stds)
+            norm_X_valid = cls.standard_normalize(X_valid, means, stds)
+            norm_X_test = cls.standard_normalize(X_test, means, stds)
+        else:
+            raise ValueError(f"parameter value is invalid: method={method} expected=['minmax','mean']")
+        
+        return norm_X_train, norm_X_valid, norm_X_test
+    
+    @classmethod
+    def make_dataloader(cls, X, y, batch_size=128):
         # Create Tensor datasets
-        train_data = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
-        valid_data = TensorDataset(torch.from_numpy(X_valid), torch.from_numpy(y_valid))
-        test_data = TensorDataset(torch.from_numpy(X_test), torch.from_numpy(y_test))
+        data = TensorDataset(torch.from_numpy(X), torch.from_numpy(y))
 
         # Make sure to SHUFFLE your data
         # NOTE: Drop last to prevent a mismatched size of hidden state
-        train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
-        valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size, drop_last=True)
-        test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size, drop_last=True)
+        data_loader = DataLoader(data, shuffle=True, batch_size=batch_size, drop_last=True)
 
-        return train_loader, valid_loader, test_loader
+        return data_loader
