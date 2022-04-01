@@ -1,5 +1,5 @@
 # Human Activity Recognition with LSTM model (PyTorch) and MLFlow Tracking
-This project follows the idea from [LSTMs for Human Activity Recognition Time Series Classification](https://machinelearningmastery.com/how-to-develop-rnn-models-for-human-activity-recognition-time-series-classification/) but implementation is done with PyTorch instead of Keras. Moreover, Docker environment and Python notebook are provided for a convenient experiment.
+This project follows the idea from [LSTMs for Human Activity Recognition Time Series Classification](https://machinelearningmastery.com/how-to-develop-rnn-models-for-human-activity-recognition-time-series-classification/) but implementation is done with PyTorch instead of Keras. Moreover, Docker environment and Python notebook are provided for a convenient experiment. For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an end-to-end MLOps tool which supports wide range of features from experiment tracking and project packaging to model deployment. By the way, MLFlow supports auto logging with only PyTorch Lightning so that, here, I share some code for defining dataset module and neural network class with PyTorch Lightning scheme.
 
 <!-- toc -->
 - [Human Activity Recognition with LSTM model (PyTorch) and MLFlow Tracking](#human-activity-recognition-with-lstm-model-pytorch-and-mlflow-tracking)
@@ -112,17 +112,33 @@ mlflow_tracker        "bash ./wait-for-it.…"   mlflow              running    
 You might want to explore and visualize data. You can do it by using `exploration.ipynb` notebook.
 
 ### 2.3 Train a model without MLFlow
-Run code in `train_lstm.ipynb` from a browser or by quickly running the below command inside the Jupyterlab container. 
+- Run code in `train_lstm.ipynb` from a browser or by quickly running the below command inside the Jupyterlab container. 
 ```
 $ docker exec -it har_lstm_jupyterlab /bin/bash -c "jupyter nbconvert --execute /workspace/train_lstm.ipynb"
 ```
-**NOTE:** You can use `--to notebook` option to output the result notebook which shows train/val loss during traning.
+**NOTE:** You can use `--to notebook` option to output the result notebook (`train_lstm.nbconvert.ipynb`) which shows train/val loss during training.
 ```
 $ docker exec -it har_lstm_jupyterlab /bin/bash -c "jupyter nbconvert --execute --to notebook /workspace/train_lstm.ipynb" 
 ```
+- A model file will be saved at `har_lstm_16_ep50_std.pt`.
+- Here is train/val loss chart during training by this notebook.
+
+![Train val chart](screenshots/train_val_chart.png?raw=true "Train val chart")
+
 
 ## 2.4 Train a model with MLFlow
 Run code in `train_lstm_mlflow.ipynb` or by quickly running the below command inside the Jupyterlab container. Unlike `train_lstm.ipynb`, this notebook trains a LSTM model and sends metrics during to MLFlow tracker service.
 ```
 $ docker exec -it har_lstm_jupyterlab /bin/bash -c "jupyter nbconvert --execute /workspace/train_lstm_mlflow.ipynb"
 ```
+Please note that, in this notebook, a model is trained with PyTorch Lightning package. Currently, MLFlow auto logging only support training with PyTorch Lightning.
+
+- Here are some screenshots from MLFlow Web UI after training a model.
+
+![MLFlow train val chart](screenshots/mlflow_train_val_chart.png?raw=true "MLFlow train val chart")
+
+![MLFlow run list](screenshots/mlflow_run_list.png?raw=true "MLFlow run list")
+
+![MLFlow example figure1](screenshots/mlflow_example_figure1.png?raw=true "MLFlow example figure1")
+
+![MLFlow example figure2](screenshots/mlflow_example_figure2.png?raw=true "MLFlow example figure2")

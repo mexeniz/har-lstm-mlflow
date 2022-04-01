@@ -4,6 +4,8 @@ import pandas as pd
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 
+sns.set_theme(style="dark")
+
 def plot_feat_chart(feat, label):
     """Visualize HAR data"""
     fig, axs = plt.subplots(nrows=3, figsize=(15,10))
