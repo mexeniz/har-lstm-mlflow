@@ -18,7 +18,7 @@ RUN apt -y update && apt -y upgrade && \
     sudo python3.9 python3.9-dev python3.9-distutils graphviz curl \
     dirmngr apt-transport-https pkg-config \
     libfreetype6-dev libpng12-0-dev \
-    lsb-release ca-certificates && \
+    lsb-release ca-certificates git && \
     curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash - && \
     apt install -y nodejs gcc g++ make && \
     apt clean -y
@@ -37,6 +37,7 @@ RUN curl https://bootstrap.pypa.io/get-pip.py | python3 && \
     scipy==1.7.3 \
     seaborn==0.11.1 \
     altair==4.1.0 \
+    altair_saver==0.5.0  \
     ipywidgets==7.6.0 \
     scikit-learn==1.0.1 \
     graphviz==0.14 \

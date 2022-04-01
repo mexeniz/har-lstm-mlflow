@@ -1,14 +1,15 @@
 version: '3.4'
 
 services:
-  jupyter-lab:
+  jupyterlab:
     build:
       context: .
       dockerfile: docker/Dockerfile
       args:
         base_image: nvidia/cuda:11.4.2-devel-ubuntu20.04
 
-    restart: always
+    container_name: har_lstm_jupyterlab
+    restart: unless-stopped
     environment:
       - JUPYTER_CONFIG_PATH=/config/jupyter/jupyter_notebook_config.py
     volumes:

@@ -1,4 +1,4 @@
-# Data modules
+# Pytorch Lightning Data module
 from loguru import logger
 import numpy as np
 import pytorch_lightning as pl

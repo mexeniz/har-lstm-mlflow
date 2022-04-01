@@ -41,7 +41,7 @@ class ModelUtils():
 
     @classmethod
     def train_net(cls, net, criterion, optimizer, train_loader, valid_loader, batch_size, epochs, use_gpu=False, print_every=100, clip=10):
-        logger.info(f"Training NN: epochs={epochs} use_gpu={use_gpu} clip={clip}")
+        logger.info(f"Training a model: epochs={epochs} use_gpu={use_gpu} clip={clip}")
         train_stat_dict = {
             "epoch":[],
             "step":[],
@@ -98,13 +98,12 @@ class ModelUtils():
 
     @staticmethod
     def test_net(net, criterion, test_loader, batch_size, use_gpu=False):
-        logger.info(f"Testing NN: use_gpu={use_gpu}")
+        logger.info(f"Testing a model: use_gpu={use_gpu}")
         # Get test data loss and accuracy
-
+        
         test_losses = [] # track loss
-        accuracy_list = []
-        precisions = []
-        recalls = []
+        preds = []
+        true_labels = []
 
         if(use_gpu):
             net.cuda()
@@ -120,11 +119,9 @@ class ModelUtils():
             
             # calculate loss
             test_loss = criterion(output, labels)
-            test_losses.append(test_loss.item())
 
             # get the predicted class by the highest probabilty
             top_p, pred = output.topk(1, dim=1)
-            
             
             if use_gpu:
                 # Move back GPU's memory to CPU's memory to compute score
@@ -134,13 +131,10 @@ class ModelUtils():
                 labels = labels.tolist()
                 pred = pred.flatten().tolist()
             
-            acc = accuracy_score(labels, pred)
-            prec = precision_score(labels, pred, average="micro")
-            rec = recall_score(labels, pred, average="micro")
+            test_losses.append(test_loss.item())
+            preds.extend(pred)
+            true_labels.extend(labels)
             
-            accuracy_list.append(acc)
-            precisions.append(prec)
-            recalls.append(rec)
 
 
         # -- stats! -- ##
@@ -148,13 +142,7 @@ class ModelUtils():
         avg_loss = np.mean(test_losses)
         logger.info("Test loss: {:.3f}".format(avg_loss))
         
-        test_acc = np.mean(accuracy_list)
-        logger.info("Test accuracy: {:.6f}".format(test_acc))
-#         logger.info("Test precision: {:.6f}".format(np.mean(precisions)))
-#         logger.info("Test recall: {:.6f}".format(np.mean(recalls)))
-        
-        
-        return avg_loss, test_acc
+        return avg_loss, true_labels, preds
     
     @staticmethod
     def save_model_weight(net, model_path):

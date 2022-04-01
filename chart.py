@@ -1,6 +1,8 @@
 import altair as alt
+import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 def plot_feat_chart(feat, label):
     """Visualize HAR data"""
@@ -46,4 +48,35 @@ def plot_feat_tensor_chart(feat_tensor, label, height=400, width=1000):
             height=height,
             width=width,
         ).interactive()
+    return chart
+
+
+def plot_conf_matrix_chart(true_labels, preds, height=400, width=400):
+    conf_mat = confusion_matrix(true_labels, preds)
+
+    X = []
+    Y = []
+    Z = []
+    labels = np.unique(true_labels)
+
+    for i in labels:
+        for j in labels:
+            X.append(i)
+            Y.append(j)
+            Z.append(conf_mat[i][j])
+    chart_df = pd.DataFrame({"true": X, "pred": Y, "n": Z})
+
+    chart = alt.Chart(chart_df).mark_rect().encode(
+        x="pred:O",
+        y="true:O",
+        color="n:Q",
+        tooltip=["true", "pred", "n"],
+    ).properties(
+        title={
+            "text": "Confusion matrix",
+        },
+        height=height,
+        width=width,
+    ).interactive()
+    
     return chart

@@ -130,7 +130,8 @@ dmypy.json
 
 *.pt
 *.zip
-data/*
-UCI HAR Dataset/*
+data/
+UCI HAR Dataset/
 config/jupyter/jupyter_notebook_config.py
-lightning_logs/*
+lightning_logs/
+mlruns/
