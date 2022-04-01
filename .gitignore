@@ -133,3 +133,4 @@ dmypy.json
 data/*
 UCI HAR Dataset/*
 config/jupyter/jupyter_notebook_config.py
+lightning_logs/*

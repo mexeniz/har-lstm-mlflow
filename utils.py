@@ -1,4 +1,5 @@
 import os
+import pickle
 import re
 
 from loguru import logger
@@ -106,3 +107,14 @@ class FeatUtils():
         data_loader = DataLoader(data, shuffle=True, batch_size=batch_size, drop_last=True)
 
         return data_loader
+
+    @staticmethod
+    def save_feat_scaler(scaler, scaler_path):
+        logger.info(f"Saving a scaler: scaler={scaler} path={scaler_path}")
+        pickle.dump(scaler, open(scaler_path, "wb"))
+        
+    @staticmethod
+    def load_feat_scaler(scaler_path):
+        logger.info(f"Loading a scaler: path={scaler_path}")
+        scaler = pickle.load(open(scaler_path, "rb"))
+        return scaler

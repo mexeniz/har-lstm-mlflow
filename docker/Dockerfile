@@ -37,12 +37,15 @@ RUN curl https://bootstrap.pypa.io/get-pip.py | python3 && \
     scipy==1.7.3 \
     seaborn==0.11.1 \
     altair==4.1.0 \
-    ipywidgets==7.5.1 \
+    ipywidgets==7.6.0 \
     scikit-learn==1.0.1 \
     graphviz==0.14 \
     loguru==0.4.1 \
     torch==1.10.1 \
-    numpy==1.22.0
+    numpy==1.22.0 \
+    ipympl==0.8.7 \
+    mlflow==1.24.0 \
+    pytorch-lightning==1.5.10
 
 # Install dependencies for altair_saver
 RUN npm install -g vega-lite vega-cli canvas

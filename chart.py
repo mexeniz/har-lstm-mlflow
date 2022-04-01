@@ -1,5 +1,5 @@
-
-import matplotlib.pyplot as plt
+import altair as alt
+import pandas as pd
 import seaborn as sns
 
 def plot_feat_chart(feat, label):
@@ -24,4 +24,26 @@ def plot_feat_chart(feat, label):
 
     sns.lineplot(x="step", y="value", hue="axis", data=bg_df, ax=axs[2]).set_title(f"Body gyro (label={label})")
     
-    plt.show()
+    return fig
+
+def plot_feat_tensor_chart(feat_tensor, label, height=400, width=1000):
+    """Visual HAR data from one tensor"""
+    feat_arr = feat_tensor.numpy()
+    feat_cols = ["total_acc_x", "total_acc_y", "total_acc_z", "body_acc_x", "body_acc_y", "body_acc_z", "body_gyro_x", "body_gyro_y", "body_gyro_z"]
+    df = pd.DataFrame(feat_arr, columns=feat_cols)
+    chart_df = df.reset_index().melt("index")
+    chart_df.rename({"index":"step", "variable":"feat"}, axis=1, inplace=True)
+    
+    chart = alt.Chart(chart_df).mark_line(point=False).encode(
+            x="step",
+            y=alt.Y("value"),
+            tooltip=["step", "value"],
+            color="feat"
+        ).properties(
+            title={
+                "text": f"Sample data (label={label})",
+            },
+            height=height,
+            width=width,
+        ).interactive()
+    return chart

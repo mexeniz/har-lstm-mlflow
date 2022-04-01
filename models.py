@@ -2,6 +2,7 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import pytorch_lightning as pl
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 import torch
 from torch import nn
@@ -19,34 +20,28 @@ class ModelUtils():
         train_stat_df.rename({"variable":"type"}, axis=1, inplace=True)
 
         chart = sns.lineplot(data=train_stat_df, x="step", y="value", hue="type")
-        display(chart)
+        return chart
     
     @staticmethod
-    def calc_valid_loss(net, criterion, valid_loader, batch_size, train_on_gpu=False):
+    def calc_valid_loss(net, criterion, valid_loader, batch_size, use_gpu=False):
         """Run a model with valid_loader and calculate model loss.
         Call `net.train()` again after this function to resume training mode."""
         
         net.eval()
-        # Get validation loss
-        val_h = net.init_hidden(batch_size, train_on_gpu)
         val_losses = []
         for inputs, labels in valid_loader:
-            # Creating new variables for the hidden state, otherwise
-            # we'd backprop through the entire training history
-            val_h = tuple([each.data for each in val_h])
-
-            if(train_on_gpu):
+            if(use_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
 
-            output, val_h = net(inputs, val_h)
+            output = net(inputs)
             val_loss = criterion(output, labels)
 
             val_losses.append(val_loss.item())
         return val_losses
 
     @classmethod
-    def train_net(cls, net, criterion, optimizer, train_loader, valid_loader, batch_size, epochs, train_on_gpu=False, print_every=100, clip=10):
-        logger.info(f"Training NN: epochs={epochs} train_on_gpu={train_on_gpu} clip={clip}")
+    def train_net(cls, net, criterion, optimizer, train_loader, valid_loader, batch_size, epochs, use_gpu=False, print_every=100, clip=10):
+        logger.info(f"Training NN: epochs={epochs} use_gpu={use_gpu} clip={clip}")
         train_stat_dict = {
             "epoch":[],
             "step":[],
@@ -56,31 +51,25 @@ class ModelUtils():
         counter = 0
 
         # move model to GPU, if available
-        if(train_on_gpu):
+        if(use_gpu):
             net.cuda()
 
         net.train()
         # train for some number of epochs
         for e in range(epochs):
-            # initialize hidden state
-            h = net.init_hidden(batch_size, train_on_gpu)
             train_losses = []
             # batch loop
             for inputs, labels in train_loader:
                 counter += 1
 
-                if(train_on_gpu):
+                if(use_gpu):
                     inputs, labels = inputs.cuda(), labels.cuda()
-
-                # Creating new variables for the hidden state, otherwise
-                # we'd backprop through the entire training history
-                h = tuple([each.data for each in h])
 
                 # zero accumulated gradients
                 net.zero_grad()
 
                 # get the output from the model
-                output, h = net(inputs, h)
+                output = net(inputs)
                 
                 # calculate the loss and perform backprop
                 loss = criterion(output, labels)
@@ -93,12 +82,12 @@ class ModelUtils():
                 
                 # Show loss stats every "print_every" batch
                 if counter % print_every == 0:
-                    val_losses = cls.calc_valid_loss(net, criterion, valid_loader, batch_size, train_on_gpu)
+                    val_losses = cls.calc_valid_loss(net, criterion, valid_loader, batch_size, use_gpu)
                     net.train()
                     logger.debug("epoch:{}/{} step={} train_loss={:.6f} val_loss={:.6f}".format(e+1, epochs, counter, np.mean(train_losses), np.mean(val_losses)))
             
             # End of epoch
-            val_losses = cls.calc_valid_loss(net, criterion, valid_loader, batch_size, train_on_gpu)
+            val_losses = cls.calc_valid_loss(net, criterion, valid_loader, batch_size, use_gpu)
             net.train()
             train_stat_dict["epoch"].append(e+1)
             train_stat_dict["step"].append(counter)
@@ -108,8 +97,8 @@ class ModelUtils():
         return train_stat_dict
 
     @staticmethod
-    def test_net(net, criterion, test_loader, batch_size, train_on_gpu=False):
-        logger.info(f"Testing NN: train_on_gpu={train_on_gpu}")
+    def test_net(net, criterion, test_loader, batch_size, use_gpu=False):
+        logger.info(f"Testing NN: use_gpu={use_gpu}")
         # Get test data loss and accuracy
 
         test_losses = [] # track loss
@@ -117,25 +106,17 @@ class ModelUtils():
         precisions = []
         recalls = []
 
-        if(train_on_gpu):
+        if(use_gpu):
             net.cuda()
-            
-        # init hidden state
-        h = net.init_hidden(batch_size, train_on_gpu)
-
+        
         net.eval()
         # iterate over test data
         for inputs, labels in test_loader:
-
-            # Creating new variables for the hidden state, otherwise
-            # we'd backprop through the entire training history
-            h = tuple([each.data for each in h])
-
-            if(train_on_gpu):
+            if(use_gpu):
                 inputs, labels = inputs.cuda(), labels.cuda()
 
             # get predicted outputs
-            output, h = net(inputs, h)
+            output = net(inputs)
             
             # calculate loss
             test_loss = criterion(output, labels)
@@ -145,7 +126,7 @@ class ModelUtils():
             top_p, pred = output.topk(1, dim=1)
             
             
-            if train_on_gpu:
+            if use_gpu:
                 # Move back GPU's memory to CPU's memory to compute score
                 labels = labels.cpu().tolist()
                 pred = pred.cpu().flatten().tolist()
@@ -186,7 +167,7 @@ class ModelUtils():
         net.load_state_dict(torch.load(model_path))
         return net
 
-class HarLSTM(nn.Module):
+class HarLSTM(pl.LightningModule):
     
     def __init__(self, input_size, output_size, n_hidden=256, n_layers=2,
                                drop_prob=0.5, lr=0.001):
@@ -203,15 +184,39 @@ class HarLSTM(nn.Module):
         self.dropout = nn.Dropout(p=drop_prob)
         self.fc = nn.Linear(n_hidden, self.output_size)
         self.softmax = nn.Softmax(dim=1)
-    
-    def forward(self, x, hidden):
-        """ Forward pass through the network. 
-            These inputs are x, and the hidden/cell state `hidden`. """
-                
-        batch_size = x.size(0)
+
+        self.criterion = nn.CrossEntropyLoss()
         
-        # get RNN outputs
-        lstm_out, hidden = self.lstm(x, hidden)
+    def training_step(self, batch, batch_idx):
+        return self._common_step(batch, batch_idx, "train")
+    
+    def validation_step(self, batch, batch_idx):
+        return self._common_step(batch, batch_idx, "valid")
+    
+    def test_step(self, batch, batch_idx):
+        return self._common_step(batch, batch_idx, "test")
+    
+    def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        x, _ = self._prepare_batch(batch)
+        return self(x)
+    
+    def _common_step(self, batch, batch_idx, stage: str):
+        x, labels = self._prepare_batch(batch)
+        loss = self.criterion(self(x), labels)
+        self.log(f"{stage}_loss", loss, on_step=True)
+        return loss
+    
+    def _prepare_batch(self, batch):
+        # Ignore label
+        x, labels = batch
+        # Input shape should be (batch_size, seq_length, input_size)
+        return x.view(x.size(0), -1, self.input_size), labels
+    
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.lr)
+    
+    def forward(self, x):
+        lstm_out, _ = self.lstm(x)
         
         out = self.dropout(lstm_out)
         # getting the last time step output
@@ -222,20 +227,5 @@ class HarLSTM(nn.Module):
         out = self.fc(out)
         out = self.softmax(out)
     
-        return out, hidden
+        return out
     
-    
-    def init_hidden(self, batch_size, train_on_gpu=False):
-        ''' Initializes hidden state '''
-        # Create two new tensors with sizes n_layers x batch_size x n_hidden,
-        # initialized to zero, for hidden state and cell state of LSTM
-        weight = next(self.parameters()).data
-        
-        if (train_on_gpu):
-            hidden = (weight.new(self.n_layers, batch_size, self.n_hidden).zero_().cuda(),
-                  weight.new(self.n_layers, batch_size, self.n_hidden).zero_().cuda())
-        else:
-            hidden = (weight.new(self.n_layers, batch_size, self.n_hidden).zero_(),
-                      weight.new(self.n_layers, batch_size, self.n_hidden).zero_())
-        
-        return hidden
