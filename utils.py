@@ -1,4 +1,5 @@
 import os
+import pickle
 import re
 
 from loguru import logger
@@ -44,10 +45,9 @@ class FeatUtils():
         return X, y
     
     @classmethod
-    def make_train_valid_test_feature(cls, X, y, prep_func=None, norm=False, split_frac=0.8):
-        """Make features from loaded dataframes for train/validate/test
-        Data are divided to a train set by a ratio of split_frac.
-        Then, the remainings are divided to a validation set and a test set equally (half by half).
+    def make_split_feature(cls, X, y, prep_func=None, norm=False, split_frac=0.8):
+        """Make features from loaded dataframes for train/validate
+        Data are divided to a train/validate set by a ratio of split_frac.
         """
         # Pre-process features here...
         if prep_func is not None:
@@ -58,30 +58,17 @@ class FeatUtils():
         y = np.array(y).squeeze()
 
         # Use `stratify` to preserve class distribution
-        X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=split_frac, random_state=88, stratify=y)
+        X_train, X_valid, y_train, y_valid = train_test_split(X, y, train_size=split_frac, random_state=88, stratify=y)
 
-        if norm:
-            mean, std = cls.compute_mean_std(X_train)
+        return X_train, X_valid, y_train, y_valid
 
-            X_train = cls.normalize_feature(X_train, mean, std)
-            X_test = cls.normalize_feature(X_test, mean, std)
+    @staticmethod
+    def save_feat_scaler(scaler, scaler_path):
+        logger.info(f"Saving a scaler: scaler={scaler} path={scaler_path}")
+        pickle.dump(scaler, open(scaler_path, "wb"))
         
-        # Make validation set and test 50:50
-        X_valid, X_test, y_valid, y_test = train_test_split(X_test, y_test, test_size=0.5, random_state=88, stratify=y_test)
-
-        return X_train, X_valid, X_test, y_train, y_valid, y_test
-
-    @classmethod
-    def make_dataloaders(cls, X_train, X_valid, X_test, y_train, y_valid, y_test, batch_size=128):
-        # Create Tensor datasets
-        train_data = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
-        valid_data = TensorDataset(torch.from_numpy(X_valid), torch.from_numpy(y_valid))
-        test_data = TensorDataset(torch.from_numpy(X_test), torch.from_numpy(y_test))
-
-        # Make sure to SHUFFLE your data
-        # NOTE: Drop last to prevent a mismatched size of hidden state
-        train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
-        valid_loader = DataLoader(valid_data, shuffle=True, batch_size=batch_size, drop_last=True)
-        test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size, drop_last=True)
-
-        return train_loader, valid_loader, test_loader
+    @staticmethod
+    def load_feat_scaler(scaler_path):
+        logger.info(f"Loading a scaler: path={scaler_path}")
+        scaler = pickle.load(open(scaler_path, "rb"))
+        return scaler
