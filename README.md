@@ -1,5 +1,7 @@
 # Human Activity Recognition with LSTM model (PyTorch) and MLFlow Tracking
-This project follows the idea from [LSTMs for Human Activity Recognition Time Series Classification](https://machinelearningmastery.com/how-to-develop-rnn-models-for-human-activity-recognition-time-series-classification/) but implementation is done with PyTorch instead of Keras. Moreover, Docker environment and Python notebook are provided for a convenient experiment. For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an end-to-end MLOps tool which supports wide range of features from experiment tracking and project packaging to model deployment. By the way, MLFlow supports auto logging with only PyTorch Lightning so that, here, I share some code for defining dataset module and neural network class with PyTorch Lightning scheme.
+This project follows the idea from [LSTMs for Human Activity Recognition Time Series Classification](https://machinelearningmastery.com/how-to-develop-rnn-models-for-human-activity-recognition-time-series-classification/), but my implementation is done with PyTorch instead of Keras. Moreover, Docker environment and Python notebook are provided for a convenient experiment and reproducibility. 
+
+For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an end-to-end MLOps tool which supports wide range of features from experiment tracking and project packaging to model deployment. Additionally, it's an open-source project and allows me to deploy a tracker service on my own server. By the way, MLFlow supports auto logging with only [PyTorch Lightning](https://www.pytorchlightning.ai/) so that, here, I share some code for defining dataset module and neural network class with PyTorch Lightning scheme.
 
 <!-- toc -->
 - [Human Activity Recognition with LSTM model (PyTorch) and MLFlow Tracking](#human-activity-recognition-with-lstm-model-pytorch-and-mlflow-tracking)
@@ -13,7 +15,8 @@ This project follows the idea from [LSTMs for Human Activity Recognition Time Se
     - [2.1 Start Docker containers](#21-start-docker-containers)
     - [2.2 Data Exploration](#22-data-exploration)
     - [2.3 Train a model without MLFlow](#23-train-a-model-without-mlflow)
-  - [2.4 Train a model with MLFlow](#24-train-a-model-with-mlflow)
+    - [2.4 Train a model with MLFlow](#24-train-a-model-with-mlflow)
+  - [3. Resources](#3-resources)
 
 <!-- tocstop -->
 ## 1. Installation
@@ -42,6 +45,7 @@ Let's build images of each service by
 ```
 $ docker-compose build
 ```
+**Credit:** Thanks the base `docker-compose.yaml` and `Dockerfile` for MLFlow from [MLFlow Docker Setup](https://github.com/Toumash/mlflow-docker)
 
 ### 1.3 Download the UCI HAR dataset and create required directories
 - Download a dataset to `./data` folder by running a script `scripts/download_dataset.sh`
@@ -126,7 +130,7 @@ $ docker exec -it har_lstm_jupyterlab /bin/bash -c "jupyter nbconvert --execute 
 ![Train val chart](screenshots/train_val_chart.png?raw=true "Train val chart")
 
 
-## 2.4 Train a model with MLFlow
+### 2.4 Train a model with MLFlow
 Run code in `train_lstm_mlflow.ipynb` or by quickly running the below command inside the Jupyterlab container. Unlike `train_lstm.ipynb`, this notebook trains a LSTM model and sends metrics during to MLFlow tracker service.
 ```
 $ docker exec -it har_lstm_jupyterlab /bin/bash -c "jupyter nbconvert --execute /workspace/train_lstm_mlflow.ipynb"
@@ -142,3 +146,11 @@ Please note that, in this notebook, a model is trained with PyTorch Lightning pa
 ![MLFlow example figure1](screenshots/mlflow_example_figure1.png?raw=true "MLFlow example figure1")
 
 ![MLFlow example figure2](screenshots/mlflow_example_figure2.png?raw=true "MLFlow example figure2")
+
+## 3. Resources
+Thanks to these projects and articles, I can understand basic LSTM in PyTorch, PyTorch Lightning, and MLFlow integration.
+- [Udacity's Deep Learning (PyTorch)](https://github.com/udacity/deep-learning-v2-pytorch)
+- [From PyTorch to PyTorch Lightning — A gentle introduction by The Author of PyTorch Lightning!](https://medium.com/towards-data-science/from-pytorch-to-pytorch-lightning-a-gentle-introduction-b371b7caaf09)
+- [MLflow Tracking](https://www.mlflow.org/docs/latest/tracking.html)
+- [MLFlow Docker Setup](https://github.com/Toumash/mlflow-docker)
+- [Altair Visualization Library](https://altair-viz.github.io/gallery/index.html#)
