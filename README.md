@@ -23,6 +23,7 @@ For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an e
 
 ### 1.1 Install Docker Nvidia runtime
 **NOTE:** Please see how to install `docker` at [Get Docker](https://docs.docker.com/get-docker/) and `docker-compose` at [Install Docker Compose](https://docs.docker.com/compose/install/).
+
 If you want to use Nvidia GPU for training a model, follow the instruction steps at [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Its runtime dependencies are required by a Docker container to access GPU resources.
 
 **WARNING:** If your machine doesn't have GPU or you don't wanna to use it, you can comment the below lines (config of `har_lstm_jupyterlab` container) in `docker-compose.yaml`
