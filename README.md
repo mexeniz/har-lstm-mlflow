@@ -20,7 +20,21 @@ For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an e
 
 <!-- tocstop -->
 ## 1. Installation
-### 1.1 Set up environment variables
+
+### 1.1 Install Docker Nvidia runtime
+**NOTE:** Please see how to install `docker` at [Get Docker](https://docs.docker.com/get-docker/) and `docker-compose` at [Install Docker Compose](https://docs.docker.com/compose/install/).
+If you want to use Nvidia GPU for training a model, follow the instruction steps at [Nvidia Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Its runtime dependencies are required by a Docker container to access GPU resources.
+
+**WARNING:** If your machine doesn't have GPU or you don't wanna to use it, you can comment the below lines (config of `har_lstm_jupyterlab` container) in `docker-compose.yaml`
+```
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+```
+
+### 1.2 Set up environment variables
 - Create `.env` and insert these below variables. `UID` is an ID of a current user (check by running a command line `id`). `JUPYTER_CONTAINER_MEM_LIMIT` is used to limit memory usage of Jupyter-lab's container.
 ```
 UID=1000
@@ -38,8 +52,7 @@ MLFLOW_EXPOSED_PORT=5000
 MLFLOW_ARTIFACTS_PATH=/path/to/har-lstm/data/mlflow_artifacts
 ```
 
-### 1.2 Build Docker image
-**NOTE:** Please see how to install `docker` at [Get Docker](https://docs.docker.com/get-docker/) and `docker-compose` at [Install Docker Compose](https://docs.docker.com/compose/install/).
+### 1.3 Build Docker image
 Here, I use Docker environment for running 3 services as containers; Jupyterlab, MLFlow tracker service, and SQL database. Docker compose is used for conveniently managing those containers and they are configured by `docker-compose.yaml`. 
 Let's build images of each service by
 ```
@@ -47,7 +60,7 @@ $ docker-compose build
 ```
 **Credit:** Thanks the base `docker-compose.yaml` and `Dockerfile` for MLFlow from [MLFlow Docker Setup](https://github.com/Toumash/mlflow-docker)
 
-### 1.3 Download the UCI HAR dataset and create required directories
+### 1.4 Download the UCI HAR dataset and create required directories
 - Download a dataset to `./data` folder by running a script `scripts/download_dataset.sh`
 ```
 $ ./scripts/download_dataset.sh ./data
@@ -67,7 +80,7 @@ data/har_dataset
 $ mkdir -p ./data/mlflow_db ./data/mlflow_artifacts
 ```
 
-### 1.4 Configure Jupyterlab
+### 1.5 Configure Jupyterlab
 - Edit `config/jupyter/jupyter_notebook_config.py` by your own.
 - For example, set a set a password hash for Jupyterlab access by running this Python code
 ```
@@ -76,18 +89,6 @@ from notebook.auth import passwd; passwd()
 After that, place a hash string in the config file at
 ```
 c.NotebookApp.password = 'sha1:place:yourstring'
-```
-
-### 1.5 Install Docker Nvidia runtime
-If you want to use Nvidia GPU for training a model, follow the instruction steps at [](). Its runtime dependencies are required by a Docker container to access GPU resources.
-
-**WARNING:** If your machine doesn't have GPU or you don't wanna to use it, you can comment the below lines (config of `har_lstm_jupyterlab` container) in `docker-compose.yaml`
-```
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
 ```
 
 ## 2. Jupyter Notebook Demo
