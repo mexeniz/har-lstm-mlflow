@@ -6,11 +6,11 @@ For tracking experiment, I chose [MLFlow](https://mlflow.org/) because it's an e
 <!-- toc -->
 - [Human Activity Recognition with LSTM model (PyTorch) and MLFlow Tracking](#human-activity-recognition-with-lstm-model-pytorch-and-mlflow-tracking)
   - [1. Installation](#1-installation)
-    - [1.1 Set up environment variables](#11-set-up-environment-variables)
-    - [1.2 Build Docker image](#12-build-docker-image)
-    - [1.3 Download the UCI HAR dataset and create required directories](#13-download-the-uci-har-dataset-and-create-required-directories)
-    - [1.4 Configure Jupyterlab](#14-configure-jupyterlab)
-    - [1.5 Install Docker Nvidia runtime](#15-install-docker-nvidia-runtime)
+    - [1.1 Install Docker Nvidia runtime](#11-install-docker-nvidia-runtime)
+    - [1.2 Set up environment variables](#12-set-up-environment-variables)
+    - [1.3 Build Docker image](#13-build-docker-image)
+    - [1.4 Download the UCI HAR dataset and create required directories](#14-download-the-uci-har-dataset-and-create-required-directories)
+    - [1.5 Configure Jupyterlab (Optional)](#15-configure-jupyterlab-optional)
   - [2. Jupyter Notebook Demo](#2-jupyter-notebook-demo)
     - [2.1 Start Docker containers](#21-start-docker-containers)
     - [2.2 Data Exploration](#22-data-exploration)
@@ -81,7 +81,7 @@ data/har_dataset
 $ mkdir -p ./data/mlflow_db ./data/mlflow_artifacts
 ```
 
-### 1.5 Configure Jupyterlab
+### 1.5 Configure Jupyterlab (Optional)
 - Edit `config/jupyter/jupyter_notebook_config.py` by your own.
 - For example, set a set a password hash for Jupyterlab access by running this Python code
 ```
@@ -91,6 +91,7 @@ After that, place a hash string in the config file at
 ```
 c.NotebookApp.password = 'sha1:place:yourstring'
 ```
+**NOTE**: Currently, the default password is `jupyter`.
 
 ## 2. Jupyter Notebook Demo
 
@@ -111,7 +112,8 @@ har_lstm_jupyterlab   "/bin/bash -c 'addus…"   jupyterlab          running    
 mlflow_db             "/entrypoint.sh mysq…"   mlflow_db           running (starting)   33060/tcp
 mlflow_tracker        "bash ./wait-for-it.…"   mlflow              running              0.0.0.0:5000->5000/tcp, :::5000->5000/tcp
 ```
-- After that, you can access Jupyterlab at `http://localhost:8888` (or another port which you've set by `config/jupyter/jupyter_notebook_config.py` section) and MLFlow tracker at `http://localhost:5000`
+- After that, you can access Jupyterlab at `http://localhost:8888` (or another port which you've set by `config/jupyter/jupyter_notebook_config.py` section) with the default password `jupyter`. 
+- For MLFlow tracker, you can access it at `http://localhost:5000`.
 
 
 ### 2.2 Data Exploration
