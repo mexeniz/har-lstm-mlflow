@@ -83,12 +83,14 @@ $ mkdir -p ./data/mlflow_db ./data/mlflow_artifacts
 
 ### 1.5 Configure Jupyterlab (Optional)
 - Edit `config/jupyter/jupyter_notebook_config.py` by your own.
-- For example, set a set a password hash for Jupyterlab access by running this Python code
+- For example, set a set a password hash for Jupyterlab access by running this Python code inside the Jupyterlab container.
 ```
 from notebook.auth import passwd; passwd()
 ```
 After that, place a hash string in the config file at
 ```
+# config/jupyter/jupyter_notebook_config.py
+
 c.NotebookApp.password = 'sha1:place:yourstring'
 ```
 **NOTE**: Currently, the default password is `jupyter`.
